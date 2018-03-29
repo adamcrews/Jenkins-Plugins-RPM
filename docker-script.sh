@@ -1,15 +1,21 @@
 #!/bin/bash
+
+. config.ini
+
 set -e
+
 echo -n "Getting updates.json ... "
-curl -s https://updates.jenkins-ci.org/current/update-center.json|sed -n 2p > update-center.json
+#curl -s -k https://updates.jenkins-ci.org/current/update-center.json | \
+#  sed -e 's/^updateCenter.post(//' | \
+#  sed -e 's/);$//' > update-center.json
+curl -s -k https://updates.jenkins-ci.org/current/update-center.actual.json > update-center.json
 echo "done"
 
-useradd -o -u ${1:-1000} rpm
+jq -r '.plugins|keys|"\(.[])"' update-center.json | \
+  xargs -n 1 -p 8 ./build-1.sh {}
 
-
-cat update-center.json | jq -r '.plugins|keys|"\(.[])"'|while read plugin
-do
-
-./build-1.sh $plugin
-
-done
+#
+# | while read plugin
+#do
+#  ./build-1.sh $plugin
+#done
