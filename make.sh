@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-MAX_PARALLEL=8
+MAX_PARALLEL=10
+
 CACHE_DIR='.cache'
 
 # These vars are also passed to docker
