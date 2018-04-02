@@ -3,15 +3,15 @@
 PKG_JSON=${PKG_JSON:-'.cache/update-center.json'}
 RELEASE=${RELEASE:-'2'}
 REPO_DEST=${REPO_DEST:-'jenkins-plugins-rpm'}
+BUILD_LOC="~rpm/rpmbuild"
 
-mkdir ~/.jfrog
+mkdir ~/.jfrog > /dev/null 2>&1 
 cp .cache/jfrog-cli.conf ~/.jfrog
 
-su rpm -c 'mkdir -p ~rpm/rpmbuild/{BUILD,BUILDROOT,RPMS,SPECS,SRPMS,SOURCES}'
+su rpm -c "mkdir -p ${BUILD_LOC}/{BUILD,BUILDROOT,RPMS,SPECS,SRPMS,SOURCES}"
 
 set -e
 plugin=$1
-tmp=$(mktemp -d)
 
 name=$(jq -r ".plugins[\"${plugin}\"].name" ${PKG_JSON})
 title=$(jq -r ".plugins[\"${plugin}\"].title" ${PKG_JSON})
@@ -21,12 +21,6 @@ url=$(jq -r ".plugins[\"${plugin}\"].url" ${PKG_JSON})
 excerpt=$(jq -r ".plugins[\"${plugin}\"].excerpt" ${PKG_JSON})
 core=$(jq -r ".plugins[\"${plugin}\"].requiredCore" ${PKG_JSON})
 filename=$(basename $url| sed -e 's/.[j|h]pi$//')
-
-PKG_LIST=$(jfrog rt s "${REPO_DEST}/jenkins-plugin-$name-${RELEASE}\*rpm" | jq -r '. | length')
-if [ "${PKG_LIST}" != '0' ]; then
-  echo Skip jenkins-plugin-$name-${RELEASE}
-  exit 0
-fi
 
 (
 cat << END
@@ -38,9 +32,8 @@ echo "Summary:        Jenkins Plugin ${title}"
 echo "BuildArch: noarch"
 echo "AutoReqProv: no"
 echo "Version:        ${version//-/_}"
-echo "Release:        ${RELEASE}%{?dist}"
-echo "Vendor:         %{?_host_vendor}"
-echo "License:        https://wiki.jenkins-ci.org/display/JENKINS/Governance+Document#GovernanceDocument-License"
+echo "Release:        ${RELEASE}"
+echo "License:        https://jenkins.io/project/governance"
 echo "Group:          Jenkins"
 echo "URL:            ${wiki}"
 echo "Source0:        ${url}"
@@ -65,9 +58,11 @@ echo "%ghost /var/lib/jenkins/plugins/${filename}.hpi"
 echo "%attr(644,jenkins,jenkins) /var/lib/jenkins/plugins/${filename}.jpi"
 echo "%attr(444,jenkins,jenkins) /var/lib/jenkins/plugins/${filename}.jpi.pinned"
 
-) > ~rpm/rpmbuild/SPECS/jenkins-plugin-${plugin}.spec
+) > ${BUILD_LOC}/SPECS/jenkins-plugin-${plugin}.spec
 
-su rpm -c "spectool -C ~rpm/rpmbuild/SOURCES -g ~rpm/rpmbuild/SPECS/jenkins-plugin-${plugin}.spec" > /dev/null
-su rpm -c "rpmbuild -bb ~rpm/rpmbuild/SPECS/jenkins-plugin-${plugin}.spec"
+spectool -C ~rpm/rpmbuild/SOURCES -g ${BUILD_LOC}/SPECS/jenkins-plugin-${plugin}.spec > /dev/null
 
-jfrog rt upload ~rpm/rpmbuild/RPMS/*/jenkins-plugin*rpm ${REPO_DEST}
+su rpm -c "rpmbuild -bb ${BUILD_LOC}/SPECS/jenkins-plugin-${plugin}.spec"
+
+jfrog rt upload ${BUILD_LOC}/RPMS/*/jenkins-plugin*rpm ${REPO_DEST}
+

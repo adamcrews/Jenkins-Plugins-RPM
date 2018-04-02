@@ -6,7 +6,7 @@ A Yum repository for Jenkins plugins. With dependencies.
 ```
 [jenkinsplugins]
 name=JenkinsPlugins
-baseurl=https://jenkins.roidelapluie.be/yum/
+baseurl=https://some_location/
 gpgcheck=0
 ```
 
@@ -14,8 +14,7 @@ gpgcheck=0
 
 * Supports Plugins dependencies
 * Support Jenkins code rependencies
-* Support every plugins
-* Updated twice a day
+* Support every plugin
 * Plugins are version-pinned in Jenkins
 
 ## Notes
@@ -27,9 +26,7 @@ gpgcheck=0
 
 ## Rebuilding this repo
 
-To rebuild this project, you will need a Jenkins server with Docker and a
-`/var/www/repo` directory writable by Jenkins. Changes will be needed to the
-Jenkinsfile as well.
+To build this project, you will need a Jenkins server with Docker, and credentials to the Artifactory server.
 
 ## How to switch to the Jenkins Plugins RPM ?
 
